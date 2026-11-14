@@ -1,0 +1,53 @@
+{
+  "StartAt": "Resize Image",
+  "States": {
+    "Resize Image": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Output": "{% $states.result.Payload %}",
+      "Arguments": {
+        "Payload": "{% $states.input %}",
+        "FunctionName": "arn:aws:lambda:ca-central-1:357621881486:function:CCMP200ResizeImage:$LATEST"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Next": "Resize Image Success",
+          "Condition": "{% $states.input.statusCode = 200 %}"
+        },
+        {
+          "Next": "Resize Image Fail",
+          "Condition": "{% $states.input.statusCode = 500 %}"
+        }
+      ],
+      "Default": "Default Fail"
+    },
+    "Resize Image Success": {
+      "Type": "Succeed"
+    },
+    "Default Fail": {
+      "Type": "Fail"
+    },
+    "Resize Image Fail": {
+      "Type": "Fail"
+    }
+  },
+  "QueryLanguage": "JSONata"
+}
